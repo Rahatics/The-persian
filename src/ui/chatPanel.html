@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Parsian AI Developer Agent</title>
+    <link rel="stylesheet" href="chatPanel.css">
+</head>
+<body>
+    <div class="header">
+        <img src="../../media/TheParsian.svg" alt="The Parsian Logo" class="logo">
+        <h1 class="header-title">The Parsian AI Developer Agent</h1>
+        <div class="connection-status">
+            <div class="status-dot disconnected" id="status-dot"></div>
+            <span id="status-text">Disconnected</span>
+        </div>
+    </div>
+
+    <!-- Model Selection -->
+    <div class="model-selection">
+        <button class="model-button active" id="gemini-button">Gemini</button>
+        <button class="model-button" id="chatgpt-button">ChatGPT</button>
+        <button class="model-button" id="deepseek-button">DeepSeek</button>
+    </div>
+
+    <div class="chat-container" id="chat-container">
+        <!-- Messages will be inserted here -->
+    </div>
+
+    <div class="typing-indicator hidden" id="typing-indicator">
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <span style="margin-left: 10px;">Thinking...</span>
+    </div>
+
+    <div class="suggestion-chips hidden" id="suggestion-chips">
+        <div class="suggestion-chip" data-action="scan">Scan project structure</div>
+        <div class="suggestion-chip" data-action="bugs">Find bugs</div>
+        <div class="suggestion-chip" data-action="test">Write unit test</div>
+        <div class="suggestion-chip" data-action="optimize">Optimize this function</div>
+    </div>
+
+    <!-- Debug Box for Error Logs -->
+    <div id="debug-box" class="debug-box">
+        <div class="debug-header">
+            <strong>Debug Logs</strong>
+            <div class="debug-controls">
+                <button id="clear-logs" class="debug-button">Clear</button>
+                <button id="copy-logs" class="debug-button">Copy Logs</button>
+            </div>
+        </div>
+        <textarea id="error-logs" class="error-logs" readonly></textarea>
+    </div>
+
+    <div class="input-container">
+        <textarea class="message-input" id="message-input" placeholder="Ask The Parsian anything about your code..." rows="1"></textarea>
+        <button class="send-button" id="send-button">Send</button>
+    </div>
+
+    <script src="chatPanel.js"></script>
+</body>
+</html>

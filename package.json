@@ -1,0 +1,157 @@
+{
+  "name": "the-parsian-vscode-extension",
+  "displayName": "The Parsian AI Developer Agent",
+  "description": "An AI developer agent that works through browser parsing with native IDE control",
+  "version": "1.0.0-alpha",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/user/the-parsian-vscode-extension.git"
+  },
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "icon": "src/media/TheParsian-128x128.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "the-parsian.connect",
+        "title": "The Parsian: Connect to Browser Extension",
+        "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.openChat",
+        "title": "The Parsian: Open Chat Panel",
+        "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.openGemini",
+        "title": "The Parsian: Open Gemini",
+        "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.openChatGPT",
+        "title": "The Parsian: Open ChatGPT",
+        "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.openDeepSeek",
+        "title": "The Parsian: Open DeepSeek",
+        "icon": "./src/media/TheParsian.svg"
+      }
+    ],
+    "configuration": {
+      "title": "The Parsian AI Developer Agent",
+      "properties": {
+        "theParsian.autoApprove.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable auto-approval of AI suggestions"
+        },
+        "theParsian.autoApprove.allowMediumConfidence": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow auto-approval of medium confidence suggestions"
+        },
+        "theParsian.autoApprove.allowAllCommands": {
+          "type": "boolean",
+          "default": false,
+          "description": "Allow auto-approval of all commands (use with caution)"
+        },
+        "theParsian.security.sanitizeHtml": {
+          "type": "boolean",
+          "default": true,
+          "description": "Sanitize HTML content from AI to prevent XSS"
+        },
+        "theParsian.security.maskSensitiveInfo": {
+          "type": "boolean",
+          "default": true,
+          "description": "Mask sensitive information in code"
+        },
+        "theParsian.security.validateJson": {
+          "type": "boolean",
+          "default": true,
+          "description": "Validate JSON responses from AI"
+        },
+        "theParsian.rag.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable Retrieval Augmented Generation for context-aware suggestions"
+        },
+        "theParsian.rag.maxContextTokens": {
+          "type": "number",
+          "default": 3000,
+          "description": "Maximum number of tokens to include in context"
+        },
+        "theParsian.rag.indexIgnorePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [".git", "node_modules", "dist", "build"],
+          "description": "Patterns to ignore when indexing files for RAG"
+        },
+        "theParsian.ui.showInlineSuggestions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show inline suggestions as you type"
+        },
+        "theParsian.ui.showStatusBarItem": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show status bar item for The Parsian"
+        },
+        "theParsian.ui.chatPanelPosition": {
+          "type": "string",
+          "enum": ["left", "right", "bottom"],
+          "default": "right",
+          "description": "Position of the chat panel"
+        },
+        "theParsian.connection.autoReconnect": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically reconnect to browser extension if connection is lost"
+        },
+        "theParsian.connection.maxReconnectAttempts": {
+          "type": "number",
+          "default": 5,
+          "description": "Maximum number of reconnection attempts"
+        },
+        "theParsian.connection.reconnectDelay": {
+          "type": "number",
+          "default": 3000,
+          "description": "Delay between reconnection attempts (in milliseconds)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.0.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@types/ws": "^8.18.1",
+    "@typescript-eslint/eslint-plugin": "^5.45.0",
+    "@typescript-eslint/parser": "^5.45.0",
+    "@vscode/test-electron": "^2.2.0",
+    "eslint": "^8.28.0",
+    "glob": "^8.0.3",
+    "mocha": "^10.1.0",
+    "typescript": "^4.9.3"
+  },
+  "dependencies": {
+    "@types/uuid": "^10.0.0",
+    "uuid": "^13.0.0",
+    "ws": "^8.13.0"
+  }
+}

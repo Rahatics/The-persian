@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "The Parsian AI Developer Agent - Browser Bridge",
+  "version": "1.0.0",
+  "description": "Browser extension that bridges communication between AI services and VS Code extension",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1/*",
+    "https://chatgpt.com/*",
+    "https://gemini.google.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "The Parsian Bridge"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://gemini.google.com/*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "icons": {
+    "16": "TheParsian-16x16.png",
+    "48": "TheParsian-48x48.png",
+    "128": "TheParsian-128x128.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [".parsian-lock"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

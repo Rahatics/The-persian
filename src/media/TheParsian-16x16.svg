@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- Simplified brain shape -->
+  <path d="M8,2 C5,2 2,4 2,7 C2,10 4,12 6,13 C4,14 4,15 5,15.5 C6,16 7,16 8,15.5 C9,15 10,14 8,13 C10,12 12,10 12,7 C12,4 11,2 8,2 Z" fill="#4B0082"/>
+  
+  <!-- Connection points -->
+  <circle cx="4" cy="6" r="0.5" fill="#00FFFF"/>
+  <circle cx="12" cy="7" r="0.5" fill="#00FFFF"/>
+  
+  <!-- Bridge elements -->
+  <path d="M2,7 L0,8 L0,9 L2,10" fill="none" stroke="#FFD700" stroke-width="0.5"/>
+  <path d="M12,7 L14,8 L14,9 L12,10" fill="none" stroke="#FFD700" stroke-width="0.5"/>
+  
+  <!-- Data flow points -->
+  <circle cx="1" cy="8.5" r="0.3" fill="#FFD700">
+    <animate attributeName="fill-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="15" cy="8.5" r="0.3" fill="#FFD700">
+    <animate attributeName="fill-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" begin="1s"/>
+  </circle>
+</svg>

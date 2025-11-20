@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Brain outline with gradient -->
+  <defs>
+    <linearGradient id="brainGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4B0082;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8A2BE2;stop-opacity:1" />
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#00FFFF;stop-opacity:0.6" />
+      <stop offset="100%" style="stop-color:#00FFFF;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+  
+  <!-- Glow effect -->
+  <circle cx="64" cy="64" r="50" fill="url(#glow)" />
+  
+  <!-- Brain outline -->
+  <path d="M64,20 C44,20 24,32 24,52 C24,72 36,84 48,90 C42,96 42,108 48,114 C54,120 66,120 72,114 C78,108 78,96 72,90 C84,84 96,72 96,52 C96,32 84,20 64,20 Z" fill="url(#brainGradient)" stroke="#2C004D" stroke-width="3"/>
+  
+  <!-- Circuit lines inside brain -->
+  <path d="M44,44 L50,50 L56,44 L62,56 L68,50 L80,62" fill="none" stroke="#00FFFF" stroke-width="2" stroke-linecap="round"/>
+  <path d="M38,66 L44,72 L56,66 L62,78 L74,72 L80,78" fill="none" stroke="#00FFFF" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Binary code elements -->
+  <text x="52" y="38" font-family="monospace" font-size="6" fill="#FFFFFF" font-weight="bold">01</text>
+  <text x="72" y="40" font-family="monospace" font-size="6" fill="#FFFFFF" font-weight="bold">10</text>
+  <text x="46" y="84" font-family="monospace" font-size="6" fill="#FFFFFF" font-weight="bold">11</text>
+  <text x="78" y="78" font-family="monospace" font-size="6" fill="#FFFFFF" font-weight="bold">00</text>
+  
+  <!-- Connection points with glow -->
+  <circle cx="32" cy="46" r="3" fill="#00FFFF">
+    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="96" cy="58" r="3" fill="#00FFFF">
+    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite" begin="0.5s"/>
+  </circle>
+  <circle cx="38" cy="86" r="3" fill="#00FFFF">
+    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite" begin="1s"/>
+  </circle>
+  <circle cx="90" cy="80" r="3" fill="#00FFFF">
+    <animate attributeName="r" values="3;4;3" dur="2s" repeatCount="indefinite" begin="1.5s"/>
+  </circle>
+  
+  <!-- Bridge element (representing connection between brain and browser) -->
+  <path d="M24,52 L6,58 L6,70 L24,76" fill="none" stroke="#FFD700" stroke-width="3"/>
+  <path d="M104,52 L122,58 L122,70 L104,76" fill="none" stroke="#FFD700" stroke-width="3"/>
+  
+  <!-- Data flow animation points -->
+  <circle cx="12" cy="64" r="2" fill="#FFD700">
+    <animate attributeName="fill-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="116" cy="64" r="2" fill="#FFD700">
+    <animate attributeName="fill-opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite" begin="1s"/>
+  </circle>
+  
+  <!-- Outer ring for professional look -->
+  <circle cx="64" cy="64" r="60" fill="none" stroke="#2C004D" stroke-width="2" stroke-opacity="0.3"/>
+</svg>
