@@ -15,46 +15,46 @@ const AI_SERVICE_CONFIGS = {
     copyButtonSelector: 'button[aria-label="Copy"]',
     rateLimitSelector: '.text-red-500', // Selector for rate limit messages
     captchaSelector: '.g-recaptcha', // Selector for CAPTCHA elements
-    // Fallback selectors in case primary ones fail
-    fallbackMessageSelector: '.markdown ol li, .markdown ul li, .markdown p',
-    fallbackInputSelector: 'textarea',
-    fallbackSendButtonSelector: 'button[type="submit"]',
-    fallbackStopButtonSelector: 'button:has(svg)',
-    fallbackCopyButtonSelector: 'button:has(svg)'
+    // Updated fallback selectors based on current ChatGPT UI
+    fallbackMessageSelector: '[data-message-author-role="assistant"] p, [data-message-author-role="assistant"] div, .markdown ol li, .markdown ul li',
+    fallbackInputSelector: 'textarea#prompt-textarea, textarea[data-id="root"], textarea[placeholder*="Send"]',
+    fallbackSendButtonSelector: 'button[data-testid="send-button"], button[aria-label="Send prompt"], button[type="submit"]',
+    fallbackStopButtonSelector: 'button[data-testid="stop-button"], button[aria-label="Stop generating"], button:has(svg)',
+    fallbackCopyButtonSelector: 'button[aria-label="Copy code"], button[aria-label="Copy"], button:has(svg)'
   },
   'gemini': {
     name: 'Gemini',
     urlPattern: 'https://gemini.google.com/*',
-    messageSelector: '.message-content',
-    inputSelector: '.ql-editor',
-    sendButtonSelector: '.send-button',
-    stopButtonSelector: '.stop-button',
-    copyButtonSelector: '.copy-button',
-    rateLimitSelector: '.rate-limit-warning', // Selector for rate limit messages
-    captchaSelector: '.captcha-container', // Selector for CAPTCHA elements
-    // Fallback selectors
-    fallbackMessageSelector: '[data-message] p, [data-message] div',
-    fallbackInputSelector: 'input, textarea',
-    fallbackSendButtonSelector: 'button[type="submit"]',
-    fallbackStopButtonSelector: 'button:has(svg)',
-    fallbackCopyButtonSelector: 'button[title*="copy" i]'
+    messageSelector: '.message-content, [aria-label="Model response"]',
+    inputSelector: '.ql-editor textarea, .textarea-auto-expand',
+    sendButtonSelector: '.send-button, .submit-button',
+    stopButtonSelector: '.stop-button, .halt-button',
+    copyButtonSelector: '.copy-button, [aria-label*="Copy"]',
+    rateLimitSelector: '.rate-limit-warning, .quota-warning', // Selector for rate limit messages
+    captchaSelector: '.captcha-container, .recaptcha-container', // Selector for CAPTCHA elements
+    // Updated fallback selectors based on current Gemini UI
+    fallbackMessageSelector: '[aria-label="Model response"] div, .response-container p, .model-response-content',
+    fallbackInputSelector: '.ql-editor, textarea[aria-label="Input prompt"], .textarea-auto-expand, textarea',
+    fallbackSendButtonSelector: '.send-button, button[aria-label="Send"], button[type="submit"], .submit-button',
+    fallbackStopButtonSelector: '.stop-button, button[aria-label="Stop"], .halt-button, button:has(svg)',
+    fallbackCopyButtonSelector: 'button[aria-label*="Copy"], .copy-button, button:has(svg)'
   },
   'deepseek': {
     name: 'DeepSeek',
     urlPattern: 'https://chat.deepseek.com/*',
-    messageSelector: '.assistant-message',
-    inputSelector: 'textarea[placeholder*="Send a message"]',
-    sendButtonSelector: 'button[type="submit"]',
-    stopButtonSelector: '.stop-generate-button',
-    copyButtonSelector: '.copy-code-button',
-    rateLimitSelector: '.rate-limit-message', // Selector for rate limit messages
-    captchaSelector: '.captcha-challenge', // Selector for CAPTCHA elements
-    // Fallback selectors
-    fallbackMessageSelector: '.message, .response',
-    fallbackInputSelector: 'textarea',
-    fallbackSendButtonSelector: 'button[type="submit"]',
-    fallbackStopButtonSelector: 'button:has(svg)',
-    fallbackCopyButtonSelector: 'button[title*="copy" i]'
+    messageSelector: '.assistant-message, [data-testid="assistant-message"]',
+    inputSelector: 'textarea[placeholder*="Send a message"], .chat-textarea',
+    sendButtonSelector: 'button[type="submit"], .send-button',
+    stopButtonSelector: '.stop-generate-button, .stop-button',
+    copyButtonSelector: '.copy-code-button, [data-testid="copy-code"]',
+    rateLimitSelector: '.rate-limit-message, .quota-exceeded', // Selector for rate limit messages
+    captchaSelector: '.captcha-challenge, .recaptcha-container', // Selector for CAPTCHA elements
+    // Updated fallback selectors
+    fallbackMessageSelector: '.message, .response, .assistant-message p, [data-testid="assistant-message"] div',
+    fallbackInputSelector: 'textarea[placeholder*="Send"], textarea, .chat-textarea',
+    fallbackSendButtonSelector: 'button[type="submit"], button[aria-label="Send"], .send-button',
+    fallbackStopButtonSelector: '.stop-generate-button, button[aria-label="Stop"], .stop-button',
+    fallbackCopyButtonSelector: '.copy-code-button, button[aria-label*="Copy"], [data-testid="copy-code"]'
   }
 };
 
@@ -349,6 +349,23 @@ function sendMessageToAI(message) {
   console.log('Input element:', inputElement);
   console.log('Send button:', sendButton);
   
+  // Enhanced element detection with additional fallbacks
+  if (!inputElement) {
+    console.log('Trying additional fallback selectors for input');
+    // Try more generic selectors
+    inputElement = document.querySelector('textarea[contenteditable="true"]') || 
+                   document.querySelector('textarea:not([readonly])') ||
+                   document.querySelector('[contenteditable="true"]');
+  }
+  
+  if (!sendButton) {
+    console.log('Trying additional fallback selectors for send button');
+    // Try more generic selectors
+    sendButton = document.querySelector('button[type="submit"]') ||
+                 document.querySelector('button[aria-label*="send" i]') ||
+                 document.querySelector('button:not([disabled])');
+  }
+  
   if (inputElement && sendButton) {
     // Clear the input field
     inputElement.value = '';
@@ -361,24 +378,73 @@ function sendMessageToAI(message) {
     inputElement.dispatchEvent(inputEvent);
     console.log('Input event dispatched');
     
-    // Click the send button
+    // Small delay to ensure the UI updates
     setTimeout(() => {
-      console.log('Clicking send button');
-      sendButton.click();
-    }, 100);
+      // Check if the send button is enabled
+      const isSendButtonEnabled = !sendButton.disabled && 
+        sendButton.offsetWidth > 0 && 
+        sendButton.offsetHeight > 0;
+      
+      if (isSendButtonEnabled) {
+        console.log('Clicking send button');
+        sendButton.click();
+      } else {
+        // Try alternative approach - dispatch enter key event with Ctrl+Enter for some services
+        console.log('Send button not enabled, trying Enter key event');
+        const enterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          bubbles: true,
+          ctrlKey: true // Some services require Ctrl+Enter
+        });
+        inputElement.dispatchEvent(enterEvent);
+        console.log('Ctrl+Enter key event dispatched');
+        
+        // Also try regular Enter as fallback
+        setTimeout(() => {
+          const simpleEnterEvent = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            bubbles: true
+          });
+          inputElement.dispatchEvent(simpleEnterEvent);
+          console.log('Enter key event dispatched');
+        }, 100);
+      }
+    }, 300); // Increased delay to 300ms for better reliability
   } else {
     console.log('Could not find input element or send button');
     // Try alternative approach - dispatch enter key event
     if (inputElement) {
       inputElement.value = message;
-      const enterEvent = new KeyboardEvent('keydown', {
-        key: 'Enter',
-        code: 'Enter',
-        keyCode: 13,
-        bubbles: true
-      });
-      inputElement.dispatchEvent(enterEvent);
-      console.log('Enter key event dispatched');
+      
+      // Try multiple keyboard events for better compatibility
+      setTimeout(() => {
+        // Try Ctrl+Enter first
+        const ctrlEnterEvent = new KeyboardEvent('keydown', {
+          key: 'Enter',
+          code: 'Enter',
+          keyCode: 13,
+          bubbles: true,
+          ctrlKey: true
+        });
+        inputElement.dispatchEvent(ctrlEnterEvent);
+        console.log('Ctrl+Enter key event dispatched');
+        
+        // Try regular Enter after a short delay
+        setTimeout(() => {
+          const enterEvent = new KeyboardEvent('keydown', {
+            key: 'Enter',
+            code: 'Enter',
+            keyCode: 13,
+            bubbles: true
+          });
+          inputElement.dispatchEvent(enterEvent);
+          console.log('Enter key event dispatched');
+        }, 150); // Increased delay
+      }, 150); // Increased delay
     }
   }
 }
@@ -425,7 +491,7 @@ async function extractCodeWithClipboard(messageElement) {
     console.log(`Found ${copyButtons.length} copy buttons, extracting code without clipboard hijacking`);
     
     // Try to extract code directly from the DOM first
-    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block');
+    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block, [class*="language-"]');
     codeElements.forEach((codeElement, index) => {
       const codeContent = codeElement.textContent || codeElement.innerText;
       if (codeContent && codeContent.trim().length > 0) {
@@ -486,7 +552,7 @@ async function extractCodeWithClipboard(messageElement) {
     // No copy buttons found, try to extract code directly from the DOM
     console.log('No copy buttons found, extracting code directly from DOM');
     
-    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block');
+    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block, [class*="language-"]');
     codeElements.forEach((codeElement, index) => {
       const codeContent = codeElement.textContent || codeElement.innerText;
       if (codeContent && codeContent.trim().length > 0) {

@@ -26,13 +26,67 @@ export class ContextManager {
         // Get current file context if provided
         let currentFileContent: string | null = null;
         if (filePath) {
-            currentFileContent = await FileManager.readFile(filePath);
+            try {
+                currentFileContent = await FileManager.readFile(filePath);
+            } catch (error) {
+                console.error('Failed to read current file:', error);
+            }
+        }
+        
+        // Prioritize context - current file is most important, then RAG context
+        const relevantFiles = { ...ragContext.relevantFiles };
+        if (currentFileContent && filePath) {
+            // Add current file to context but limit its size
+            const currentFileTokens = this.estimateTokenCount(currentFileContent);
+            if (currentFileTokens > 1000) {
+                // Truncate large files to first 1000 tokens
+                const truncatedContent = currentFileContent.substring(0, 4000) + '\n\n... (truncated for token limit)';
+                relevantFiles[filePath] = truncatedContent;
+            } else {
+                relevantFiles[filePath] = currentFileContent;
+            }
+        }
+        
+        // If we have a current file, find related files to include in context
+        if (filePath && currentFileContent) {
+            // Get files related to the current file using RAG
+            const relatedFiles = this.findRelevantFiles(`related to ${filePath}`, 5);
+            
+            // Add related files to context (limit to 2 additional files)
+            let relatedFileCount = 0;
+            for (const relatedFile of relatedFiles) {
+                if (relatedFileCount >= 2) break;
+                
+                // Skip if already included
+                if (relevantFiles[relatedFile.filePath]) continue;
+                
+                // Skip the current file
+                if (relatedFile.filePath === filePath) continue;
+                
+                try {
+                    const content = await FileManager.readFile(relatedFile.filePath);
+                    if (content) {
+                        const tokenCount = this.estimateTokenCount(content);
+                        
+                        // Check token limit
+                        if (ragContext.totalTokens + tokenCount <= 3000) {
+                            relevantFiles[relatedFile.filePath] = content;
+                            ragContext.totalTokens += tokenCount;
+                            relatedFileCount++;
+                        } else {
+                            break;
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to read related file:', error);
+                }
+            }
         }
         
         // Combine all context
         return {
             query: query,
-            relevantFiles: ragContext.relevantFiles,
+            relevantFiles: relevantFiles,
             recentHistory: recentHistory,
             currentFile: currentFileContent ? { path: filePath || '', content: currentFileContent } : null,
             totalTokens: ragContext.totalTokens
@@ -106,6 +160,71 @@ export class ContextManager {
     // Find relevant files using RAG
     findRelevantFiles(query: string, maxResults: number = 5): RelevantFile[] {
         return this.ragManager.findRelevantFiles(query, maxResults);
+    }
+
+    // Find files related to a given file based on naming conventions
+    findRelatedFiles(filePath: string): RelevantFile[] {
+        const relatedFiles: RelevantFile[] = [];
+        const fileName = path.basename(filePath);
+        const dirName = path.dirname(filePath);
+        const ext = path.extname(fileName);
+        const baseName = path.basename(fileName, ext);
+        
+        try {
+            // Look for common related file patterns
+            const patterns = [
+                `${baseName}.test${ext}`,
+                `${baseName}.spec${ext}`,
+                `${baseName}.mock${ext}`,
+                `${baseName}.d${ext}`,
+                `${baseName}.min${ext}`,
+                `${baseName}Utils${ext}`,
+                `${baseName}Helper${ext}`,
+                `_${baseName}${ext}`,
+                `${baseName}Service${ext}`,
+                `${baseName}Controller${ext}`,
+                `${baseName}Model${ext}`,
+                `${baseName}View${ext}`,
+                `${baseName}Component${ext}`
+            ];
+            
+            // Check for files in the same directory
+            if (fs.existsSync(dirName)) {
+                const files = fs.readdirSync(dirName);
+                for (const file of files) {
+                    const fullPath = path.join(dirName, file);
+                    if (fullPath === filePath) continue; // Skip the original file
+                    
+                    // Check if file matches any pattern
+                    for (const pattern of patterns) {
+                        if (file === pattern) {
+                            relatedFiles.push({
+                                filePath: fullPath,
+                                similarity: 0.8 // High similarity for related files
+                            });
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Look for index files in parent directories
+            let parentDir = path.dirname(dirName);
+            while (parentDir !== path.dirname(parentDir)) { // Stop at root
+                const indexPath = path.join(parentDir, `index${ext}`);
+                if (fs.existsSync(indexPath)) {
+                    relatedFiles.push({
+                        filePath: indexPath,
+                        similarity: 0.6 // Medium similarity for index files
+                    });
+                }
+                parentDir = path.dirname(parentDir);
+            }
+        } catch (error) {
+            console.error('Error finding related files:', error);
+        }
+        
+        return relatedFiles;
     }
 
     // Summarize history to save space

@@ -42,6 +42,16 @@
         "command": "the-parsian.openDeepSeek",
         "title": "The Parsian: Open DeepSeek",
         "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.refactor",
+        "title": "The Parsian: Refactor Selected Code",
+        "icon": "./src/media/TheParsian.svg"
+      },
+      {
+        "command": "the-parsian.fixBug",
+        "title": "The Parsian: Fix Bugs in Selected Code",
+        "icon": "./src/media/TheParsian.svg"
       }
     ],
     "configuration": {

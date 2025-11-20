@@ -94,8 +94,22 @@ export class RagManager {
 
     // Estimate token count for content
     private estimateTokenCount(content: string): number {
-        // Simple estimation: average 4 characters per token
-        return Math.ceil(content.length / 4);
+        // More accurate token estimation using word-based approach
+        // Average tokens per word is about 1.3-1.5, we'll use 1.4
+        const words = content.match(/\b\w+\b/g) || [];
+        const wordTokens = words.length * 1.4;
+        
+        // Add tokens for special characters and structure
+        const specialCharTokens = (content.match(/[{}()\[\]:;,.]/g) || []).length * 0.5;
+        
+        // Add tokens for whitespace and formatting
+        const whitespaceTokens = (content.match(/\s/g) || []).length * 0.1;
+        
+        // Total estimated tokens
+        const totalTokens = Math.ceil(wordTokens + specialCharTokens + whitespaceTokens);
+        
+        // Ensure minimum of 1 token for non-empty content
+        return content.length > 0 ? Math.max(1, totalTokens) : 0;
     }
 
     // Index a file
@@ -329,22 +343,38 @@ export class RagManager {
         // Find relevant files
         const relevantFiles = this.findRelevantFiles(query);
         
-        // Get file contents
+        // Get file contents - limit to most relevant files only
         const fileContents: { [key: string]: string } = {};
         let totalTokens = 0;
+        const maxFiles = 3; // Limit to 3 most relevant files
+        let fileCount = 0;
         
+        // Prioritize files that are most relevant to the query
         for (const file of relevantFiles) {
+            // Limit number of files
+            if (fileCount >= maxFiles) {
+                break;
+            }
+            
             try {
                 const content = fs.readFileSync(file.filePath, 'utf8');
                 const tokenCount = this.estimateTokenCount(content);
                 
                 // Check if adding this file would exceed token limit (roughly 3000 tokens)
                 if (totalTokens + tokenCount > 3000) {
+                    // Try to add a truncated version
+                    const remainingTokens = 3000 - totalTokens;
+                    if (remainingTokens > 100) { // Only add if we have space for meaningful content
+                        const charsToInclude = remainingTokens * 4; // Approximate
+                        fileContents[file.filePath] = content.substring(0, charsToInclude) + '\n\n... (truncated for token limit)';
+                        totalTokens += remainingTokens;
+                    }
                     break;
                 }
                 
                 fileContents[file.filePath] = content;
                 totalTokens += tokenCount;
+                fileCount++;
             } catch (error) {
                 console.error(`Failed to read file ${file.filePath}:`, error);
             }

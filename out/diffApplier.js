@@ -47,14 +47,19 @@ class DiffApplier {
             return;
         }
         // Create a temporary document with the new code
-        const tempUri = document.uri.with({ scheme: 'untitled', path: `${document.fileName}.diff` });
+        const tempUri = document.uri.with({ scheme: 'untitled', path: `${document.fileName}.proposed` });
         const tempDocument = await vscode.workspace.openTextDocument(tempUri);
         // Set the content of the temporary document
         const edit = new vscode.WorkspaceEdit();
         edit.insert(tempUri, new vscode.Position(0, 0), newCode);
         await vscode.workspace.applyEdit(edit);
         // Show the diff view
-        await vscode.commands.executeCommand('vscode.diff', document.uri, tempUri, `${document.fileName} ↔ Proposed Changes`, { viewColumn: vscode.ViewColumn.One });
+        await vscode.commands.executeCommand('vscode.diff', document.uri, tempUri, `${document.fileName} ↔ Proposed Changes`, {
+            viewColumn: vscode.ViewColumn.Beside,
+            preserveFocus: true
+        });
+        // Show information message
+        vscode.window.showInformationMessage('Diff view opened. Review changes and click "Apply Changes" when ready.');
     }
     /**
      * Apply a partial change to a specific range in the document
@@ -84,6 +89,44 @@ class DiffApplier {
      */
     static createRange(startLine, endLine) {
         return new vscode.Range(new vscode.Position(startLine, 0), new vscode.Position(endLine, 0));
+    }
+    /**
+     * Apply changes with user confirmation
+     * @param newCode The new code to apply
+     * @param language The language of the code (optional)
+     */
+    static async applyWithConfirmation(newCode, language) {
+        const choice = await vscode.window.showInformationMessage('Apply the proposed changes to your code?', 'Show Diff', 'Apply Changes', 'Cancel');
+        switch (choice) {
+            case 'Show Diff':
+                await this.showDiff(newCode, language);
+                break;
+            case 'Apply Changes':
+                await this.applyCodeChange(newCode, language);
+                break;
+            default:
+                // User cancelled
+                break;
+        }
+    }
+    /**
+     * Apply selected code from a larger code block
+     * @param fullCode The full code block received from AI
+     * @param selectedCode The specific code to apply
+     */
+    static async applySelectedCode(fullCode, selectedCode) {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            vscode.window.showErrorMessage('No active editor found');
+            return;
+        }
+        // If selected code is the same as full code, apply the full code
+        if (fullCode.trim() === selectedCode.trim()) {
+            await this.applyCodeChange(fullCode);
+            return;
+        }
+        // Show diff view for the selected code
+        await this.showDiff(selectedCode);
     }
 }
 exports.DiffApplier = DiffApplier;

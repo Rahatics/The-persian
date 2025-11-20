@@ -232,6 +232,21 @@
             codeBlock.className = 'code-block';
             codeBlock.textContent = content;
             messageContent.appendChild(codeBlock);
+            
+            // Add apply code button for code responses
+            if (role === 'ai') {
+                const applyButton = document.createElement('button');
+                applyButton.className = 'apply-code-button';
+                applyButton.textContent = 'Apply Code';
+                applyButton.addEventListener('click', () => {
+                    vscode.postMessage({
+                        type: 'applyCode',
+                        code: content,
+                        language: language
+                    });
+                });
+                messageContent.appendChild(applyButton);
+            }
         } else {
             messageContent.textContent = content;
         }
@@ -291,6 +306,18 @@
                 if (suggestionChips) {
                     suggestionChips.classList.remove('hidden');
                 }
+                break;
+                
+            case 'showApplyCodeButton':
+                // This is handled in the addMessageToChat function
+                hideTypingIndicator();
+                addMessageToChat('ai', message.code, message.language);
+                state.messages.push({ 
+                    role: 'ai', 
+                    content: message.code,
+                    language: message.language
+                });
+                vscode.setState(state);
                 break;
                 
             case 'error':

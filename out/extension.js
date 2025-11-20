@@ -5,11 +5,15 @@ const vscode = require("vscode");
 const chatPanelProvider_1 = require("./chatPanelProvider");
 const inlineCompletionProvider_1 = require("./inlineCompletionProvider");
 const connectionManager_1 = require("./connectionManager");
+const commandHandler_1 = require("./commandHandler");
 let connectionManager;
+let commandHandler;
 function activate(context) {
     console.log('The Parsian AI Developer Agent is now active!');
     // Create connection manager
     connectionManager = new connectionManager_1.ConnectionManager();
+    // Create command handler
+    commandHandler = new commandHandler_1.CommandHandler();
     // Register the connect command
     let connectDisposable = vscode.commands.registerCommand('the-parsian.connect', async () => {
         await connectionManager.startServer();
@@ -34,6 +38,26 @@ function activate(context) {
             vscode.window.showErrorMessage('The Parsian: Server not started. Please connect first.');
         }
     });
+    // Register refactor command
+    let refactorDisposable = vscode.commands.registerCommand('the-parsian.refactor', async () => {
+        const selection = vscode.window.activeTextEditor?.selection;
+        if (selection) {
+            const selectedText = vscode.window.activeTextEditor?.document.getText(selection);
+            if (selectedText) {
+                await commandHandler.handleRefactorCommand(`refactor the following code: ${selectedText}`);
+            }
+        }
+    });
+    // Register fix bug command
+    let fixBugDisposable = vscode.commands.registerCommand('the-parsian.fixBug', async () => {
+        const selection = vscode.window.activeTextEditor?.selection;
+        if (selection) {
+            const selectedText = vscode.window.activeTextEditor?.document.getText(selection);
+            if (selectedText) {
+                await commandHandler.handleRefactorCommand(`fix any bugs in the following code: ${selectedText}`);
+            }
+        }
+    });
     // Register the inline completion provider
     const inlineCompletionProvider = new inlineCompletionProvider_1.InlineCompletionProvider();
     const inlineCompletionDisposable = vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, inlineCompletionProvider);
@@ -43,6 +67,8 @@ function activate(context) {
     context.subscriptions.push(openGeminiDisposable);
     context.subscriptions.push(openChatGPTDisposable);
     context.subscriptions.push(openDeepSeekDisposable);
+    context.subscriptions.push(refactorDisposable);
+    context.subscriptions.push(fixBugDisposable);
 }
 exports.activate = activate;
 function deactivate() {

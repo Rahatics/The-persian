@@ -5,12 +5,23 @@ const uuid_1 = require("uuid");
 class ProtocolManager {
     // Create a request message
     static createRequest(actionType, userQuery, context) {
+        // Add hidden prompt engineering instruction for cleaner code output
+        const enhancedQuery = `${userQuery}
+
+Please follow these instructions strictly:
+1. Give me ONLY the code block. 
+2. No explanation.
+3. No markdown wrapper.
+4. Provide clean, executable code only.
+5. If the task requires multiple files, provide each file separately.
+6. Use proper indentation and formatting.
+7. Do not include any placeholder comments or TODOs.`;
         return {
             id: (0, uuid_1.v4)(),
             system_role: 'STRICT_JSON_ONLY_MODE',
             action_type: actionType,
             context: context || {},
-            user_query: userQuery
+            user_query: enhancedQuery
         };
     }
     // Create a response message

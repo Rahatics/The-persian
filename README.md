@@ -30,6 +30,11 @@ This project consists of two main components:
 - Support for multiple AI services (ChatGPT, Gemini, DeepSeek)
 - Code suggestion and explanation capabilities
 - Project structure scanning and analysis
+- Enhanced DOM selector handling for better compatibility with AI service UI changes
+- Improved context management with related file detection
+- Code diff view for reviewing and applying AI-generated code changes
+- Refactor and bug fix commands for selected code
+- Better token estimation for more accurate context management
 
 ## Architecture
 
@@ -55,6 +60,7 @@ The VS Code extension provides the main user interface and functionality:
 - Context management for code-aware conversations
 - Security and confirmation systems
 - Integration with VS Code's API for file operations
+- Command palette integration for refactor and bug fix commands
 
 ## Installation
 
@@ -65,3 +71,10 @@ The VS Code extension provides the main user interface and functionality:
 2. **Browser Extension**:
    - Load the [browser-extension](browser-extension) directory as an unpacked extension in Chrome/Edge
    - Enable developer mode in the browser extensions page
+
+## Usage
+
+1. Connect to the browser extension using the "The Parsian: Connect to Browser Extension" command
+2. Open the chat panel with "The Parsian: Open Chat Panel"
+3. Select code and use "The Parsian: Refactor Selected Code" or "The Parsian: Fix Bugs in Selected Code" from the command palette
+4. Review and apply AI-generated code changes using the "Apply Code" button in the chat panel

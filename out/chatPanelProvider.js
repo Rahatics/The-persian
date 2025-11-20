@@ -6,6 +6,7 @@ const path = require("path");
 const fs = require("fs");
 const uuid_1 = require("uuid");
 const contextManager_1 = require("./contextManager");
+const diffApplier_1 = require("./diffApplier");
 class ChatPanelProvider {
     constructor(panel, extensionUri, server) {
         this._disposables = [];
@@ -33,6 +34,9 @@ class ChatPanelProvider {
                         // This would typically call a method on the server or connection manager
                         vscode.commands.executeCommand(`the-parsian.open${message.service.charAt(0).toUpperCase() + message.service.slice(1)}`);
                     }
+                    break;
+                case 'applyCode':
+                    this.handleApplyCode(message.code, message.language);
                     break;
             }
         }, null, this._disposables);
@@ -141,11 +145,25 @@ class ChatPanelProvider {
                             content: data.data.content,
                             timestamp: Date.now()
                         });
-                        this._panel.webview.postMessage({
-                            type: 'aiResponse',
-                            content: data.data.content,
-                            language: data.data.language
-                        });
+                        // If the response contains code, offer to apply it
+                        if (data.data.language === 'javascript' || data.data.language === 'typescript' ||
+                            data.data.language === 'python' || data.data.language === 'java' ||
+                            data.data.content.includes('```')) {
+                            // Send a message to the webview to show apply code button
+                            this._panel.webview.postMessage({
+                                type: 'showApplyCodeButton',
+                                code: data.data.content,
+                                language: data.data.language
+                            });
+                        }
+                        else {
+                            // For non-code responses, just show the response
+                            this._panel.webview.postMessage({
+                                type: 'aiResponse',
+                                content: data.data.content,
+                                language: data.data.language
+                            });
+                        }
                     }
                     else {
                         // Handle error response
@@ -282,6 +300,10 @@ This project contains ${this.countFiles(projectStructure)} files and ${this.coun
     }
     countDirectories(structure) {
         return (structure.match(/📁/g) || []).length;
+    }
+    handleApplyCode(code, language) {
+        // Use the static DiffApplier methods
+        diffApplier_1.DiffApplier.applyCodeChange(code, language);
     }
     _update() {
         const webview = this._panel.webview;
