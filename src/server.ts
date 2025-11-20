@@ -23,6 +23,30 @@ export class ParsianServer {
 			this.port = await this.findFreePort();
 			console.log(`Using port: ${this.port}`);
 			
+			// Check if lock file exists and is stale
+			if (fs.existsSync(this.lockFilePath)) {
+				try {
+					const lockFileContent = fs.readFileSync(this.lockFilePath, 'utf8');
+					const lockPort = parseInt(lockFileContent.trim());
+					
+					// Check if the port in the lock file is still in use
+					if (lockPort && !(await this.isPortFree(lockPort))) {
+						console.log(`Lock file exists but port ${lockPort} is still in use`);
+						// If the port is in use by another instance, find a different port
+						if (lockPort === this.port) {
+							this.port = await this.findFreePort();
+							console.log(`Changed to different port: ${this.port}`);
+						}
+					} else {
+						console.log('Lock file exists but port is free, removing stale lock file');
+						fs.unlinkSync(this.lockFilePath);
+					}
+				} catch (error) {
+					console.log('Error reading lock file, removing it');
+					fs.unlinkSync(this.lockFilePath);
+				}
+			}
+			
 			// Create WebSocket server
 			this.wss = new ws.WebSocketServer({ port: this.port });
 			console.log('WebSocket server created');
@@ -92,7 +116,9 @@ export class ParsianServer {
 	
 	public stop(): void {
 		if (this.wss) {
-			this.wss.close();
+			this.wss.close(() => {
+				console.log('WebSocket server closed');
+			});
 			this.wss = null;
 			this.browserClients.clear();
 			this.vscodeClients.clear();
@@ -100,7 +126,12 @@ export class ParsianServer {
 			
 			// Remove lock file
 			if (fs.existsSync(this.lockFilePath)) {
-				fs.unlinkSync(this.lockFilePath);
+				try {
+					fs.unlinkSync(this.lockFilePath);
+					console.log('Lock file removed');
+				} catch (error) {
+					console.error('Error removing lock file:', error);
+				}
 			}
 		}
 	}
@@ -368,8 +399,42 @@ function exampleFunction() {
 	}
 	
 	private async findFreePort(): Promise<number> {
-		// Simple implementation - in a real scenario, we'd check if ports are actually free
-		// For now, we'll use a fixed port for consistency
-		return 8765;
+		// Try to find a free port starting from 8765
+		const net = require('net');
+		const commonPorts = [8765, 8766, 8767, 8768, 8769];
+		
+		// First try common ports
+		for (const port of commonPorts) {
+			if (await this.isPortFree(port)) {
+				return port;
+			}
+		}
+		
+		// If common ports are taken, find any free port
+		return new Promise((resolve, reject) => {
+			const server = net.createServer();
+			server.unref();
+			server.on('error', reject);
+			
+			// Listen on port 0 to get a random free port
+			server.listen(0, () => {
+				const addressInfo: any = server.address();
+				const freePort = addressInfo.port;
+				server.close(() => {
+					resolve(freePort);
+				});
+			});
+		});
+	}
+	
+	// Check if a port is free
+	private async isPortFree(port: number): Promise<boolean> {
+		return new Promise((resolve) => {
+			const net = require('net');
+			const tester = net.createServer()
+				.once('error', () => resolve(false))
+				.once('listening', () => tester.close(() => resolve(true)))
+				.listen(port, '127.0.0.1');
+		});
 	}
 }

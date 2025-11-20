@@ -177,31 +177,71 @@ export class RagManager {
         return results;
     }
 
-    // Generate a dummy vector for demonstration
+    // Generate a more realistic vector for demonstration
+    // In a real implementation, this would use a proper embedding model
     private generateDummyVector(content: string): number[] {
-        // In a real implementation, this would use a proper embedding model
-        // For now, we'll generate a simple vector based on content features
-        const vector: number[] = [];
-        const features = [
-            content.length,
-            (content.match(/\n/g) || []).length,
-            (content.match(/\w+/g) || []).length,
-            (content.match(/[{}]/g) || []).length,
-            (content.match(/[();]/g) || []).length
+        // Simple but more effective text embedding approach
+        // Based on term frequency and position weighting
+        
+        // Convert to lowercase and split into words
+        const words = content.toLowerCase().match(/\b\w+\b/g) || [];
+        
+        // Define a simple vocabulary of common programming terms
+        const vocabulary = [
+            'function', 'class', 'const', 'let', 'var', 'if', 'else', 'for', 'while', 'return',
+            'import', 'export', 'from', 'require', 'module', 'this', 'new', 'try', 'catch',
+            'async', 'await', 'promise', 'callback', 'array', 'object', 'string', 'number',
+            'boolean', 'null', 'undefined', 'true', 'false', 'console', 'log', 'error',
+            'debug', 'test', 'describe', 'it', 'expect', 'assert', 'equal', 'not',
+            'component', 'render', 'state', 'props', 'use', 'effect', 'context',
+            'request', 'response', 'get', 'post', 'put', 'delete', 'fetch', 'axios',
+            'database', 'query', 'select', 'insert', 'update', 'delete', 'table', 'model',
+            'schema', 'validation', 'middleware', 'route', 'controller', 'service',
+            'config', 'environment', 'process', 'env', 'port', 'host', 'server',
+            'client', 'api', 'endpoint', 'json', 'xml', 'html', 'css', 'scss', 'sass',
+            'javascript', 'typescript', 'python', 'java', 'csharp', 'php', 'ruby',
+            'react', 'angular', 'vue', 'node', 'express', 'koa', 'fastify',
+            'mongodb', 'postgresql', 'mysql', 'redis', 'elasticsearch',
+            'docker', 'kubernetes', 'container', 'image', 'volume', 'network',
+            'git', 'commit', 'push', 'pull', 'merge', 'branch', 'checkout',
+            'webpack', 'babel', 'eslint', 'prettier', 'jest', 'mocha', 'chai'
         ];
         
-        // Normalize features to 0-1 range and create vector
-        const maxValues = [10000, 1000, 5000, 500, 500];
-        for (let i = 0; i < features.length; i++) {
-            vector.push(features[i] / maxValues[i]);
+        // Initialize vector with zeros
+        const vector: number[] = new Array(128).fill(0);
+        
+        // Count occurrences of each vocabulary term
+        const termCounts: { [key: string]: number } = {};
+        words.forEach(word => {
+            if (vocabulary.includes(word)) {
+                termCounts[word] = (termCounts[word] || 0) + 1;
+            }
+        });
+        
+        // Fill vector with term frequencies
+        vocabulary.forEach((term, index) => {
+            if (index < 128) { // Only use first 128 terms to fit in vector
+                const count = termCounts[term] || 0;
+                // Normalize by document length (TF - Term Frequency)
+                vector[index] = count / Math.max(words.length, 1);
+            }
+        });
+        
+        // Add some additional features
+        const additionalFeatures = [
+            content.length / 10000, // Document length normalized
+            (content.match(/\n/g) || []).length / 1000, // Line count normalized
+            (content.match(/\w+/g) || []).length / 5000, // Word count normalized
+            (content.match(/[{}]/g) || []).length / 500, // Brace count normalized
+            (content.match(/[();]/g) || []).length / 500 // Parentheses count normalized
+        ];
+        
+        // Add additional features to the end of the vector
+        for (let i = 0; i < additionalFeatures.length && 128 - 10 + i < 128; i++) {
+            vector[128 - 10 + i] = additionalFeatures[i];
         }
         
-        // Pad to 128 dimensions
-        while (vector.length < 128) {
-            vector.push(0);
-        }
-        
-        return vector.slice(0, 128);
+        return vector;
     }
 
     // Find relevant files based on a query

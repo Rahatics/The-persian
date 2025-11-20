@@ -3,7 +3,7 @@
 
 console.log('The Parsian Content Script loaded');
 
-// Configuration for different AI services
+// Configuration for different AI services with fallback selectors
 const AI_SERVICE_CONFIGS = {
   'chatgpt': {
     name: 'ChatGPT',
@@ -14,7 +14,13 @@ const AI_SERVICE_CONFIGS = {
     stopButtonSelector: 'button[data-testid="stop-button"]',
     copyButtonSelector: 'button[aria-label="Copy"]',
     rateLimitSelector: '.text-red-500', // Selector for rate limit messages
-    captchaSelector: '.g-recaptcha' // Selector for CAPTCHA elements
+    captchaSelector: '.g-recaptcha', // Selector for CAPTCHA elements
+    // Fallback selectors in case primary ones fail
+    fallbackMessageSelector: '.markdown ol li, .markdown ul li, .markdown p',
+    fallbackInputSelector: 'textarea',
+    fallbackSendButtonSelector: 'button[type="submit"]',
+    fallbackStopButtonSelector: 'button:has(svg)',
+    fallbackCopyButtonSelector: 'button:has(svg)'
   },
   'gemini': {
     name: 'Gemini',
@@ -25,7 +31,13 @@ const AI_SERVICE_CONFIGS = {
     stopButtonSelector: '.stop-button',
     copyButtonSelector: '.copy-button',
     rateLimitSelector: '.rate-limit-warning', // Selector for rate limit messages
-    captchaSelector: '.captcha-container' // Selector for CAPTCHA elements
+    captchaSelector: '.captcha-container', // Selector for CAPTCHA elements
+    // Fallback selectors
+    fallbackMessageSelector: '[data-message] p, [data-message] div',
+    fallbackInputSelector: 'input, textarea',
+    fallbackSendButtonSelector: 'button[type="submit"]',
+    fallbackStopButtonSelector: 'button:has(svg)',
+    fallbackCopyButtonSelector: 'button[title*="copy" i]'
   },
   'deepseek': {
     name: 'DeepSeek',
@@ -36,7 +48,13 @@ const AI_SERVICE_CONFIGS = {
     stopButtonSelector: '.stop-generate-button',
     copyButtonSelector: '.copy-code-button',
     rateLimitSelector: '.rate-limit-message', // Selector for rate limit messages
-    captchaSelector: '.captcha-challenge' // Selector for CAPTCHA elements
+    captchaSelector: '.captcha-challenge', // Selector for CAPTCHA elements
+    // Fallback selectors
+    fallbackMessageSelector: '.message, .response',
+    fallbackInputSelector: 'textarea',
+    fallbackSendButtonSelector: 'button[type="submit"]',
+    fallbackStopButtonSelector: 'button:has(svg)',
+    fallbackCopyButtonSelector: 'button[title*="copy" i]'
   }
 };
 
@@ -313,8 +331,20 @@ function sendMessageToAI(message) {
     return;
   }
   
-  const inputElement = document.querySelector(currentServiceConfig.inputSelector);
-  const sendButton = document.querySelector(currentServiceConfig.sendButtonSelector);
+  // Try primary selectors first
+  let inputElement = document.querySelector(currentServiceConfig.inputSelector);
+  let sendButton = document.querySelector(currentServiceConfig.sendButtonSelector);
+  
+  // If primary selectors fail, try fallback selectors
+  if (!inputElement && currentServiceConfig.fallbackInputSelector) {
+    console.log('Primary input selector failed, trying fallback');
+    inputElement = document.querySelector(currentServiceConfig.fallbackInputSelector);
+  }
+  
+  if (!sendButton && currentServiceConfig.fallbackSendButtonSelector) {
+    console.log('Primary send button selector failed, trying fallback');
+    sendButton = document.querySelector(currentServiceConfig.fallbackSendButtonSelector);
+  }
   
   console.log('Input element:', inputElement);
   console.log('Send button:', sendButton);
@@ -338,6 +368,18 @@ function sendMessageToAI(message) {
     }, 100);
   } else {
     console.log('Could not find input element or send button');
+    // Try alternative approach - dispatch enter key event
+    if (inputElement) {
+      inputElement.value = message;
+      const enterEvent = new KeyboardEvent('keydown', {
+        key: 'Enter',
+        code: 'Enter',
+        keyCode: 13,
+        bubbles: true
+      });
+      inputElement.dispatchEvent(enterEvent);
+      console.log('Enter key event dispatched');
+    }
   }
 }
 
@@ -378,45 +420,82 @@ async function extractCodeWithClipboard(messageElement) {
   
   const codeBlocks = [];
   
-  // Save current clipboard content
-  let originalClipboard = null;
-  try {
-    originalClipboard = await navigator.clipboard.readText();
-  } catch (error) {
-    console.log('Could not read original clipboard content');
-  }
-  
-  // Process each copy button
-  for (let i = 0; i < copyButtons.length; i++) {
-    const button = copyButtons[i];
+  // If we have copy buttons, use them (but don't hijack clipboard unnecessarily)
+  if (copyButtons.length > 0) {
+    console.log(`Found ${copyButtons.length} copy buttons, extracting code without clipboard hijacking`);
     
-    // Click the copy button
-    button.click();
+    // Try to extract code directly from the DOM first
+    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block');
+    codeElements.forEach((codeElement, index) => {
+      const codeContent = codeElement.textContent || codeElement.innerText;
+      if (codeContent && codeContent.trim().length > 0) {
+        codeBlocks.push({
+          content: codeContent.trim(),
+          language: detectCodeLanguage(codeContent)
+        });
+      }
+    });
     
-    // Wait for clipboard to update
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    try {
-      // Read the clipboard content
-      const clipboardContent = await navigator.clipboard.readText();
+    // If we couldn't extract code from DOM, then use copy buttons
+    if (codeBlocks.length === 0) {
+      console.log('Could not extract code from DOM, using copy buttons');
       
-      // Add to code blocks
-      codeBlocks.push({
-        content: clipboardContent,
-        language: detectCodeLanguage(clipboardContent)
-      });
-    } catch (error) {
-      console.error('Error reading clipboard:', error);
+      // Save current clipboard content if possible
+      let originalClipboard = null;
+      try {
+        originalClipboard = await navigator.clipboard.readText();
+      } catch (error) {
+        console.log('Could not read original clipboard content');
+      }
+      
+      // Process each copy button
+      for (let i = 0; i < copyButtons.length; i++) {
+        const button = copyButtons[i];
+        
+        // Click the copy button
+        button.click();
+        
+        // Wait for clipboard to update
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        try {
+          // Read the clipboard content
+          const clipboardContent = await navigator.clipboard.readText();
+          
+          // Add to code blocks
+          codeBlocks.push({
+            content: clipboardContent,
+            language: detectCodeLanguage(clipboardContent)
+          });
+        } catch (error) {
+          console.error('Error reading clipboard:', error);
+        }
+      }
+      
+      // Restore original clipboard content if we had it
+      if (originalClipboard !== null) {
+        try {
+          await navigator.clipboard.writeText(originalClipboard);
+          console.log('Original clipboard content restored');
+        } catch (error) {
+          console.log('Could not restore original clipboard content');
+        }
+      }
     }
-  }
-  
-  // Restore original clipboard content if we had it
-  if (originalClipboard !== null) {
-    try {
-      await navigator.clipboard.writeText(originalClipboard);
-    } catch (error) {
-      console.log('Could not restore original clipboard content');
-    }
+  } else {
+    // No copy buttons found, try to extract code directly from the DOM
+    console.log('No copy buttons found, extracting code directly from DOM');
+    
+    const codeElements = messageElement.querySelectorAll('code, pre code, .code-block');
+    codeElements.forEach((codeElement, index) => {
+      const codeContent = codeElement.textContent || codeElement.innerText;
+      if (codeContent && codeContent.trim().length > 0) {
+        codeBlocks.push({
+          content: codeContent.trim(),
+          language: detectCodeLanguage(codeContent)
+        });
+      }
+    });
   }
   
   return codeBlocks;

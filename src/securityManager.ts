@@ -40,10 +40,27 @@ export class SecurityManager {
         /npm\s+run\s+\w+/
     ];
 
-    // Sanitize HTML content to prevent XSS
+    // Sanitize HTML content to prevent XSS while preserving formatting
     static sanitizeHTML(html: string): string {
-        // Remove all HTML tags
-        return html.replace(/<[^>]*>/g, '');
+        // Allow safe HTML tags for formatting
+        // Remove dangerous tags and attributes
+        return html
+            // Remove script tags and their content
+            .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+            // Remove iframe tags
+            .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+            // Remove object tags
+            .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+            // Remove embed tags
+            .replace(/<embed\b[^>]*>/gi, '')
+            // Remove javascript: links
+            .replace(/javascript:/gi, '')
+            // Remove on* event handlers
+            .replace(/\s*on\w+\s*=\s*["'][^"']*["']/gi, '')
+            // Remove data: URLs except for images
+            .replace(/src\s*=\s*["']data:(?!image)[^"']*["']/gi, '')
+            // Close any unclosed tags
+            .replace(/<([a-zA-Z][a-zA-Z0-9]*)[^>]*\/>/g, '<$1></$1>');
     }
 
     // Check if a command is blacklisted
