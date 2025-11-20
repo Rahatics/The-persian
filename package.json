@@ -13,7 +13,15 @@
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onCommand:the-parsian.connect",
+    "onCommand:the-parsian.openChat",
+    "onCommand:the-parsian.openGemini",
+    "onCommand:the-parsian.openChatGPT",
+    "onCommand:the-parsian.openDeepSeek",
+    "onCommand:the-parsian.refactor",
+    "onCommand:the-parsian.fixBug"
+  ],
   "main": "./out/extension.js",
   "icon": "src/media/TheParsian-128x128.png",
   "contributes": {
